@@ -12,7 +12,7 @@ import (
 const request = "https://prodservices.waters.com/api/waters/search/category_facet$shop:Shop&contenttype_facet$columns:Columns?isocode=en_US&page=1"
 
 type cntItemsFromOnePage struct {
-	num_found int
+	NumFound int `json:"num_found"`
 }
 
 type item struct {
@@ -27,7 +27,6 @@ type page struct {
 }
 
 func main() {
-
 	fmt.Print(GetPagesCnt1(request))
 }
 
@@ -82,14 +81,14 @@ func GetPagesCnt(request string) (int, error) {
 
 func GetPagesCnt1(request string) (int, error) {
 	body := MakeRequest1(request)
-	var items cntItemsFromOnePage
+	items := cntItemsFromOnePage{}
 	err := json.Unmarshal(body, &items)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	//Todo найти метод округления вверх
-	cntInt := int(items.num_found/12 + 1)
+	cntInt := int(items.NumFound/12 + 1)
 	return cntInt, nil
 }
 
