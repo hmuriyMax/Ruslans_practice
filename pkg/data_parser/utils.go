@@ -83,7 +83,7 @@ func MakeRequest(siteURL string, headers map[string]string, timeout int) ([]byte
 	}
 
 	// Use the default timeout if the timeout parameter isn't configured.
-	reqTimeout := 10 * time.Second
+	reqTimeout := 5 * time.Minute
 	if timeout != 0 {
 		reqTimeout = time.Duration(timeout) * time.Second
 	}
