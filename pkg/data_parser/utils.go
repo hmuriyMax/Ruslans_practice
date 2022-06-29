@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"time"
 )
@@ -54,9 +55,9 @@ func getPriceOfOneItem(itemId string) (price, error) {
 	return pr[0], nil
 }
 
-func getAvailabilityOfOneItem(itemId string) (availability, error) {
+func getAvailabilityOfOneItem(itemId string, countryCode string) (availability, error) {
 	//Todo узнать про страну запроса (от этого зависит результат)
-	siteUrl := fmt.Sprintf("https://prodservices.waters.com/api/waters/product/v1/availability/%s/US", itemId)
+	siteUrl := fmt.Sprintf("https://prodservices.waters.com/api/waters/product/v1/availability/%s/%s", itemId, countryCode)
 	body, err := MakeRequest(siteUrl, nil, 0)
 	if err != nil {
 		return availability{}, err
@@ -109,4 +110,14 @@ func MakeRequest(siteURL string, headers map[string]string, timeout int) ([]byte
 	}
 
 	return respBody, nil
+}
+
+func Print(logger *log.Logger, prod []product) {
+	for _, el := range prod {
+		logger.Printf(StructFormat+"\n", el.Id, el.Title, el.Price.Value, el.Price.Currency, el.Url)
+		for countryCode, avlbty := range el.Availability {
+			logger.Printf("\tAVAILABLE IN %s:  %v\n", countryCode, avlbty)
+		}
+		logger.Println()
+	}
 }

@@ -8,10 +8,13 @@ import (
 )
 
 func main() {
-	start := time.Now()
 	logger := log.New(os.Stdout, "", 0)
-	result, _ := data_parser.GetAllData(logger, "Shop")
+	start := time.Now()
+	result, err := data_parser.GetAllData(logger, "Shop", []string{"US", "GB", "CH"})
 	duration := time.Since(start)
-	logger.Println(result)
+	if err != nil {
+		log.Fatalf("Fatal error: %v", err)
+	}
+	data_parser.Print(logger, result)
 	logger.Printf("Operation took %.0f seconds. Parsed %d items", duration.Seconds(), len(result))
 }

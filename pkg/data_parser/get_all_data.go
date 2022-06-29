@@ -8,8 +8,11 @@ import (
 	"sync"
 )
 
-func GetAllData(lo *log.Logger, contentType string) ([]product, error) {
-	itemsCnt, _ := getItemsCnt(fmt.Sprintf(url, strings.ToLower(contentType), contentType, 1))
+func GetAllData(lo *log.Logger, contentType string, countriesList []string) ([]product, error) {
+	itemsCnt, err := getItemsCnt(fmt.Sprintf(url, strings.ToLower(contentType), contentType, 1))
+	if err != nil {
+		return nil, err
+	}
 	products := make([]product, itemsCnt)
 
 	// TODO: выяснить, как работает арифметика при разных типах
@@ -38,21 +41,23 @@ func GetAllData(lo *log.Logger, contentType string) ([]product, error) {
 					return
 				}
 
-				availability, err := getAvailabilityOfOneItem(itemId)
-				if err != nil {
-					log.Printf("Error parsing availability of item %s: %v", itemId, err)
-					return
+				avlb := make(map[string]bool)
+				for _, el := range countriesList {
+					availability, err := getAvailabilityOfOneItem(itemId, el)
+					if err != nil {
+						log.Printf("Error parsing availability in %s of item %s: %v", el, itemId, err)
+					} else {
+						avlb[el] = availability.Status == "IN_STOCK"
+					}
 				}
 
 				mu.Lock()
 				products[i*ItemsOnPage+j] = product{
 					Id:           page.Items[j].Id,
 					Title:        page.Items[j].Title,
-					Availability: availability.Status,
-					Price: struct {
-						Currency string
-						Value    float64
-					}(price.Val),
+					Url:          page.Items[j].Url,
+					Availability: avlb,
+					Price:        price.Val,
 				}
 				mu.Unlock()
 			}(i, j)

@@ -1,7 +1,9 @@
 package data_parser
 
-const ItemsOnPage = 99
-const url = "https://prodservices.waters.com/api/waters/search/category_facet$%s:%s?isocode=en_US&page=%d&rows=99"
+const (
+	ItemsOnPage = 99
+	url         = "https://prodservices.waters.com/api/waters/search/category_facet$%s:%s?isocode=en_US&page=%d&rows=99"
+)
 
 // TODO: это URL, который извлекает все товары
 
@@ -14,14 +16,17 @@ type page struct {
 	Items []struct {
 		Title string `json:"title"`
 		Id    string `json:"skucode"`
+		Url   string `json:"url"`
 	} `json:"documents"`
 }
 
+type PriceEntity struct {
+	Currency string  `json:"currencyCode"`
+	Value    float64 `json:"value"`
+}
+
 type price struct {
-	Val struct {
-		Currency string  `json:"currencyCode"`
-		Value    float64 `json:"value"`
-	} `json:"basePrice"`
+	Val PriceEntity `json:"basePrice"`
 }
 
 // TODO: доступность по странам (иногда в зависимости от страны меняется доступность)
@@ -32,9 +37,12 @@ type availability struct {
 type product struct {
 	Title        string
 	Id           string
-	Availability string
-	Price        struct {
-		Currency string
-		Value    float64
-	}
+	Availability map[string]bool
+	Url          string
+	Price        PriceEntity
 }
+
+const StructFormat = `	ID:               %s
+	TITLE:            %s
+	PRICE:            %.2f %s
+	URL:              %s`
