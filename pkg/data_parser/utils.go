@@ -5,28 +5,32 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"time"
 )
 
 // getItemsCnt для того, чтобы узнать общее количество товаров данного вида
 func getItemsCnt(url string) (int, error) {
-	body := MakeRequest(url, nil, 0)
-	cnt := cntItemsFromOnePage{}
-	err := json.Unmarshal(body, &cnt)
+	body, err := MakeRequest(url, nil, 0)
 	if err != nil {
-		log.Fatal(err)
+		return 0, err
+	}
+	cnt := cntItemsFromOnePage{}
+	err = json.Unmarshal(body, &cnt)
+	if err != nil {
+		return 0, err
 	}
 	return cnt.NumFound, nil
 }
 
 func getAllItemsFromOnePage(request string) (page, error) {
-	body := MakeRequest(request, nil, 0)
+	body, err := MakeRequest(request, nil, 0)
+	if err != nil {
+		return page{}, err
+	}
 	var pg page
-	//Todo доработать метод (https://stackoverflow.com/questions/42377989/unmarshal-json-array-of-arrays-in-go)
 	if err := json.Unmarshal(body, &pg); err != nil {
-		log.Fatal(err)
+		return page{}, err
 	}
 	return pg, nil
 }
@@ -39,10 +43,13 @@ func getPriceOfOneItem(itemId string) (price, error) {
 		"channel":     "ECOMM",
 		"language":    "en",
 	}
-	body := MakeRequest(siteUrl, headers, 0)
+	body, err := MakeRequest(siteUrl, headers, 0)
+	if err != nil {
+		return price{}, err
+	}
 	var pr []price
 	if err := json.Unmarshal(body, &pr); err != nil {
-		log.Fatal(err)
+		return price{}, err
 	}
 	return pr[0], nil
 }
@@ -50,19 +57,22 @@ func getPriceOfOneItem(itemId string) (price, error) {
 func getAvailabilityOfOneItem(itemId string) (availability, error) {
 	//Todo узнать про страну запроса (от этого зависит результат)
 	siteUrl := fmt.Sprintf("https://prodservices.waters.com/api/waters/product/v1/availability/%s/US", itemId)
-	body := MakeRequest(siteUrl, nil, 0)
+	body, err := MakeRequest(siteUrl, nil, 0)
+	if err != nil {
+		return availability{}, err
+	}
 	var av availability
 	if err := json.Unmarshal(body, &av); err != nil {
-		log.Fatal(err)
+		return availability{}, err
 	}
 	return av, nil
 }
 
-func MakeRequest(siteURL string, headers map[string]string, timeout int) []byte {
+func MakeRequest(siteURL string, headers map[string]string, timeout int) ([]byte, error) {
 	body := io.Reader(nil)
 	req, err := http.NewRequest(http.MethodGet, siteURL, body)
 	if err != nil {
-		log.Fatalln(err)
+		return nil, err
 	}
 	if len(headers) > 0 {
 		for k, v := range headers {
@@ -86,17 +96,17 @@ func MakeRequest(siteURL string, headers map[string]string, timeout int) []byte 
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		log.Fatalln(err)
+		return nil, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		log.Fatalln(resp.Status)
+		return nil, http.ErrServerClosed
 	}
 
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatalln(err)
+		return nil, err
 	}
 
-	return respBody
+	return respBody, nil
 }

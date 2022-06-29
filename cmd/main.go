@@ -1,17 +1,17 @@
 package main
 
 import (
-	"fmt"
+	"log"
+	"os"
 	"time"
 	"webScraper/pkg/data_parser"
 )
 
 func main() {
-	//fmt.Print(getPriceOfOneItem("405000981"))
 	start := time.Now()
-	result, _ := data_parser.GetAllData("Shop")
+	logger := log.New(os.Stdout, "", 0)
+	result, _ := data_parser.GetAllData(logger, "Shop")
 	duration := time.Since(start)
-	fmt.Println(duration)
-	fmt.Println(duration.Nanoseconds())
-	fmt.Print(result)
+	logger.Println(result)
+	logger.Printf("Operation took %.0f seconds. Parsed %d items", duration.Seconds(), len(result))
 }
