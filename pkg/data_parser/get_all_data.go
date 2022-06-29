@@ -8,7 +8,7 @@ import (
 	"sync"
 )
 
-func GetAllData(lo *log.Logger, contentType string, countriesList []string) ([]product, error) {
+func GetAllData(lgr *log.Logger, contentType string, countriesList []string) ([]product, error) {
 	itemsCnt, err := getItemsCnt(fmt.Sprintf(url, strings.ToLower(contentType), contentType, 1))
 	if err != nil {
 		return nil, err
@@ -17,23 +17,23 @@ func GetAllData(lo *log.Logger, contentType string, countriesList []string) ([]p
 
 	// TODO: выяснить, как работает арифметика при разных типах
 	pageCnt := int(math.Ceil(float64(itemsCnt) / ItemsOnPage))
-	lo.Printf("%d items on %d pages found. Lets parse!", itemsCnt, pageCnt)
+	lgr.Printf("%d items on %d pages found. Lets parse!", itemsCnt, pageCnt)
 
 	wg := sync.WaitGroup{}
 	wg.Add(itemsCnt)
 	mu := sync.Mutex{}
 	for i := 0; i < pageCnt; i++ {
-		lo.Printf("Page %3.d parsing...", i+1)
-		page, err := getAllItemsFromOnePage(fmt.Sprintf(url, strings.ToLower(contentType), contentType, i+1))
+		lgr.Printf("Page %3.d parsing...", i+1)
+		pg, err := getAllItemsFromOnePage(fmt.Sprintf(url, strings.ToLower(contentType), contentType, i+1))
 		if err != nil {
 			log.Printf("Error parsing page %d: %v", i, err)
 			continue
 		}
-		for j := 0; j < len(page.Items); j++ {
+		for j := 0; j < len(pg.Items); j++ {
 			// Создам горутину для отдельного товара
-			go func(i, j int) {
+			go func(i, j int, pg *page) {
 				defer wg.Done()
-				itemId := page.Items[j].Id
+				itemId := pg.Items[j].Id
 
 				price, err := getPriceOfOneItem(itemId)
 				if err != nil {
@@ -53,14 +53,14 @@ func GetAllData(lo *log.Logger, contentType string, countriesList []string) ([]p
 
 				mu.Lock()
 				products[i*ItemsOnPage+j] = product{
-					Id:           page.Items[j].Id,
-					Title:        page.Items[j].Title,
-					Url:          page.Items[j].Url,
+					Id:           pg.Items[j].Id,
+					Title:        pg.Items[j].Title,
+					Url:          pg.Items[j].Url,
 					Availability: avlb,
 					Price:        price.Val,
 				}
 				mu.Unlock()
-			}(i, j)
+			}(i, j, &pg)
 		}
 	}
 	wg.Wait()

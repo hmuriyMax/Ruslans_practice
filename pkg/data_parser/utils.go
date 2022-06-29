@@ -2,6 +2,7 @@ package data_parser
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -101,7 +102,7 @@ func MakeRequest(siteURL string, headers map[string]string, timeout int) ([]byte
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, http.ErrServerClosed
+		return nil, errors.New(fmt.Sprintf("Response is %d", resp.StatusCode))
 	}
 
 	respBody, err := ioutil.ReadAll(resp.Body)
